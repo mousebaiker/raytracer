@@ -119,5 +119,10 @@ Vector<T> cross(Vector<T> first, const Vector<T>& second) {
   return first;
 }
 
+template <class T>
+bool IsClose(const Vector<T>& first, const Vector<T>& second, T tolerance) {
+  return (first - second).length() < tolerance;
+}
+
 } // namespace linal
 #endif //RAYTRACER_LINAL

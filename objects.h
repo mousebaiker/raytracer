@@ -7,6 +7,9 @@
 using linal::Vector;
 
 namespace raytracer {
+
+const double TOLERANCE = 1e-7;
+
 template <class T>
 class Ray {
  public:
@@ -90,6 +93,25 @@ class Sphere : public SceneObject<T> {
     return intersection_point;
   }
 
+  Vector<T> GetNormalVector(const Vector<T>& point) const { 
+    return point - this->GetPosition();
+  }
+
+  Ray<T> Reflect(const Ray<T> &ray, const Vector<T> &point) const {
+    // The point is assumed to be on a surface of a sphere.
+    Vector<T> to_point = point - ray.GetOrigin();
+
+    if (!linal::IsClose(to_point.normalized(), ray.GetDirection().normalized(), TOLERANCE)) {
+      return Ray<T>(Vector<T>::zeros(), Vector<T>::zeros());
+    }
+
+    Vector<T> normal = GetNormalVector(point).normalized();
+    Vector<T> projection_on_normal = point + to_point.dot(normal) * normal;
+    Vector<T> end_point = 2 * (projection_on_normal - ray.GetOrigin()) + ray.GetOrigin();
+    return Ray<T>(point, end_point - point);
+  }
+
+
  private:
   Vector<T> GetProjection(const Ray<T> &ray) const {
     const Vector<T> direction = ray.GetDirection().normalized();
@@ -97,7 +119,7 @@ class Sphere : public SceneObject<T> {
 
     T length = direction.dot(to_center);
     Vector<T> intersection =
-        ray.GetOrigin() + length * ray.GetDirection().normalized();
+        ray.GetOrigin() + length * direction;
     return intersection;
   }
 
@@ -200,7 +222,7 @@ class Scene {
       return BLACK;
     }
 
-    Vector<T> reflected_ray =
+    Ray<T> reflected_ray =
         intersected_object->Reflect(ray, closest_intersection);
     RGB reflection_color = GetColor(reflected_ray, depth + 1, max_depth);
     RGB lightning_color =
