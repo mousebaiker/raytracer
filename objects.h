@@ -8,7 +8,7 @@ using linal::Vector;
 
 namespace raytracer {
 
-const double TOLERANCE = 1e-7;
+constexpr double kTolerance = 1e-7;
 
 template <class T>
 class Ray {
@@ -23,14 +23,14 @@ class Ray {
   Vector<T> SetOrigin(Vector<T> v) { origin_ = v; }
 
  private:
-  Vector<T> direction_;
   Vector<T> origin_;
+  Vector<T> direction_;
 };
 
 template <class T>
 class SceneObject {
  public:
-  SceneObject(Vector<T> position) : position_(position) {}
+  SceneObject(Vector<T> position) : position_(position), color_(RGB(0,0,0)) {}
 
   Vector<T> GetPosition() const { return position_; }
   void SetPostion(Vector<T> v) { position_ = v; }
@@ -50,7 +50,7 @@ class SceneObject {
   virtual bool IsIntersected(const Ray<T> &ray) const = 0;
   virtual Vector<T> GetIntersection(const Ray<T> &ray) const = 0;
 
-  virtual bool Reflect(const Ray<T> &ray, const Vector<T> point) const = 0;
+  virtual Ray<T> Reflect(const Ray<T> &ray, const Vector<T> point) const = 0;
 
  private:
   Vector<T> position_;
@@ -74,40 +74,47 @@ class Sphere : public SceneObject<T> {
     return RadiusSquaredDifference(point) >= 0;
   }
 
-  Vector<T> GetIntersection(const Ray<T> &ray) const {
-    Vector<T> projection = GetProjection(ray);
-    T discriminant = RadiusSquaredDifference(projection);
+  Vector<T> GetIntersection(const Ray<T>& ray) const {
+    Vector<T> direction = ray.GetDirection();
+    Vector<T> origin = ray.GetOrigin();
+    Vector<T> position = this->GetPosition();
 
+    T p = direction.dot(direction);
+    T q = 2 * direction.dot(origin - position);
+    T m = origin.dot(origin) + position.dot(position) - 2 * origin.dot(position) - radius_*radius_;
+    T discriminant = q * q - 4 * p * m;
+    // return Vector<T>(p, q, m);
     if (discriminant < 0) {
       return Vector<T>::zeros();
     }
 
-    T length = sqrt(discriminant);
-    T sign = 1;
-    Vector<T> norm_direction = ray.GetDirection().normalized();
-    if (!IsPointInside(ray.GetOrigin())) {
-      sign *= -1;
+    T offset_negative = -q - std::sqrt(discriminant);
+    if (offset_negative >= 0) {
+      return origin +  offset_negative / (2 * p) * direction;
     }
 
-    Vector<T> intersection_point = projection + sign * length * norm_direction;
-    return intersection_point;
+    T offset_positive = -q + std::sqrt(discriminant);
+    if (offset_positive >= 0) {
+      return origin + offset_positive / (2 * p) * direction;
+    }
+    return Vector<T>::zeros();
   }
 
   Vector<T> GetNormalVector(const Vector<T>& point) const { 
     return point - this->GetPosition();
   }
 
-  Ray<T> Reflect(const Ray<T> &ray, const Vector<T> &point) const {
+  Ray<T> Reflect(const Ray<T> &ray, const Vector<T> point) const {
     // The point is assumed to be on a surface of a sphere.
-    Vector<T> to_point = point - ray.GetOrigin();
+    Vector<T> from_point = ray.GetOrigin() - point;
 
-    if (!linal::IsClose(to_point.normalized(), ray.GetDirection().normalized(), TOLERANCE)) {
+    if (!linal::IsClose(from_point.normalized(), -ray.GetDirection().normalized(), kTolerance)) {
       return Ray<T>(Vector<T>::zeros(), Vector<T>::zeros());
     }
 
     Vector<T> normal = GetNormalVector(point).normalized();
-    Vector<T> projection_on_normal = point + to_point.dot(normal) * normal;
-    Vector<T> end_point = 2 * (projection_on_normal - ray.GetOrigin()) + ray.GetOrigin();
+    Vector<T> projection_on_normal = point + from_point.dot(normal) * normal;
+    Vector<T> end_point = 2. * (projection_on_normal - ray.GetOrigin()) + ray.GetOrigin();
     return Ray<T>(point, end_point - point);
   }
 
@@ -130,7 +137,7 @@ class Sphere : public SceneObject<T> {
 
   T radius_;
 };
-
+/*
 template <class T>
 class Scene {
  public:
@@ -173,14 +180,14 @@ class Scene {
     long long width = camera.GetWidth();
 
     double angle_of_view = camera.GetAngleInRads();
-    double width_of_view = 2 * tan(angle_of_view);
+    double width_of_view = 2. * tan(angle_of_view);
     double height_of_view = width_of_view * height / (double)width;
     double pixel_size = width_of_view / width;
 
     Vector<T> width_offset =
-        (-1) * (width / 2 - 0.5 * (1 - width % 2)) * pixel_size * right;
+        (-1) * (width / 2. - 0.5 * (1 - width % 2)) * pixel_size * right;
     Vector<T> height_offset =
-        (height / 2 - 0.5 * (1 - height % 2)) * pixel_size * up;
+        (height / 2. - 0.5 * (1 - height % 2)) * pixel_size * up;
     for (long long row = 0; row < height; ++row) {
       for (long long column = 0; column < width; ++column) {
         Vector<T> width_direction = width_offset + column * pixel_size * right;
@@ -249,6 +256,6 @@ class Scene {
 // lights;
 // objects;
 //}
-
+*/
 }  // namespace raytracer
 #endif  // RAYTRACER_OBJECTS

@@ -41,6 +41,8 @@ $(OBJDIR)/%_test.o : %_test.cc $(GTEST_HEADERS)
 linal_test : $(addprefix $(OBJDIR)/, gtest_main.a linal_test.o)
 	$(CC) $(GTEST_CPPFLAGS) $(GTEST_CXXFLAGS) $^ -o $@
 
+objects_test : $(addprefix $(OBJDIR)/, gtest_main.a objects_test.o) objects.h
+	$(CC) $(GTEST_CPPFLAGS) $(GTEST_CXXFLAGS) $^ -o $@
 
 .PHONY : clean
 

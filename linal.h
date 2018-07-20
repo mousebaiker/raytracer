@@ -3,12 +3,19 @@
 
 #include <math.h>
 
+// Testing macro.
+#define EXPECT_VECTORS_NEAR(v1, v2, tol) \
+EXPECT_NEAR(v1.x(), v2.x(), tol); \
+EXPECT_NEAR(v1.y(), v2.y(), tol); \
+EXPECT_NEAR(v1.z(), v2.z(), tol)
+
 namespace linal {
 
 template <class T>
 class Vector {
 public:
-  Vector(T x, T y, T z) {
+  template <class X, class Y, class Z>
+  Vector(X x, Y y, Z z) {
     vec_[0] = x;
     vec_[1] = y;
     vec_[2] = z;
@@ -60,14 +67,21 @@ public:
     return temp;
   }
 
-  Vector<T>& operator *= (T scalar) {
+  Vector<T> operator - () const {
+    Vector<T> temp(-this->x(), -this->y(), -this->z());
+    return temp;
+  } 
+
+  template <class U>
+  Vector<T>& operator *= (U scalar) {
     x() *= scalar;
     y() *= scalar;
     z() *= scalar;
     return *this;
   }
 
-  Vector<T> operator * (T scalar) const {
+  template <class U>
+  Vector<T> operator * (U scalar) const {
     Vector<T> temp(*this);
     temp *= scalar;
     return temp;
@@ -102,8 +116,8 @@ private:
 };
 
 
-template <class T>
-inline Vector<T> operator * (T scalar, Vector<T> v) {
+template <class T, class U>
+inline Vector<T> operator * (U scalar, Vector<T> v) {
   return v * scalar;
 }
 
@@ -119,8 +133,8 @@ Vector<T> cross(Vector<T> first, const Vector<T>& second) {
   return first;
 }
 
-template <class T>
-bool IsClose(const Vector<T>& first, const Vector<T>& second, T tolerance) {
+template <class T, class U>
+bool IsClose(const Vector<T>& first, const Vector<T>& second, U tolerance) {
   return (first - second).length() < tolerance;
 }
 

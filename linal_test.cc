@@ -21,5 +21,4 @@ TEST(VectorTest, EqualityTest) {
   EXPECT_FALSE(first != first_equal);
   EXPECT_NE(first, second);
   EXPECT_TRUE(first != second);
-
 }
